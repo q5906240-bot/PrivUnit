@@ -29,5 +29,6 @@ def test_tauri_bundle_declares_square_png_icons_for_linux_appimage() -> None:
     assert "icons/128x128.png" in icons
     assert "icons/128x128@2x.png" in icons
     assert "icons/icon.png" in icons
+    assert "icons/icon.ico" in icons
     for icon in icons:
         assert Path("src-tauri", icon).is_file()
