@@ -91,3 +91,11 @@ def test_repository_contains_bundled_rapidocr_models() -> None:
     model_dir = Path.cwd() / "resources" / "ocr" / "rapidocr"
 
     verify_model_dir(model_dir)
+
+
+def test_git_attributes_keep_ocr_text_configs_lf_only() -> None:
+    attributes = Path(".gitattributes").read_text(encoding="utf-8")
+
+    assert "resources/ocr/rapidocr/**/*.yaml text eol=lf" in attributes
+    assert "resources/ocr/rapidocr/**/*.json text eol=lf" in attributes
+    assert "resources/ocr/rapidocr/**/*.onnx binary" in attributes

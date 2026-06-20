@@ -1,0 +1,4 @@
+resources/ocr/rapidocr/**/*.yaml text eol=lf
+resources/ocr/rapidocr/**/*.json text eol=lf
+resources/ocr/rapidocr/**/*.onnx binary
+resources/vision/**/*.xml text eol=lf

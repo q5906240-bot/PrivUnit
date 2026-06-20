@@ -19,3 +19,15 @@ def test_shell_permission_allows_redactor_sidecar() -> None:
         "sidecar": True,
         "args": True,
     } in allowed
+
+
+def test_tauri_bundle_declares_square_png_icons_for_linux_appimage() -> None:
+    config = json.loads(Path("src-tauri/tauri.conf.json").read_text(encoding="utf-8"))
+    icons = config["bundle"]["icon"]
+
+    assert "icons/32x32.png" in icons
+    assert "icons/128x128.png" in icons
+    assert "icons/128x128@2x.png" in icons
+    assert "icons/icon.png" in icons
+    for icon in icons:
+        assert Path("src-tauri", icon).is_file()
