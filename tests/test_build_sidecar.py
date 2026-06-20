@@ -1,6 +1,15 @@
 from __future__ import annotations
 
-from scripts.build_sidecar import EXCLUDED_MODULES, HIDDEN_IMPORTS, build_pyinstaller_command, tauri_sidecar_name
+import sys
+import types
+
+from scripts.build_sidecar import (
+    EXCLUDED_MODULES,
+    HIDDEN_IMPORTS,
+    build_pyinstaller_command,
+    rapidocr_config_data_files,
+    tauri_sidecar_name,
+)
 
 
 def test_tauri_sidecar_name_uses_platform_triple() -> None:
@@ -22,3 +31,21 @@ def test_pyinstaller_command_excludes_unrelated_ml_stacks() -> None:
     assert "rapidocr_onnxruntime" in joined
     assert "rapidocr_onnxruntime.ch_ppocr_v3_det" in HIDDEN_IMPORTS
     assert "--hidden-import rapidocr_onnxruntime.ch_ppocr_v3_det" in joined
+
+
+def test_rapidocr_config_data_files_only_includes_existing_configs(tmp_path, monkeypatch) -> None:
+    package_root = tmp_path / "rapidocr_onnxruntime"
+    (package_root / "ch_ppocr_v3_det").mkdir(parents=True)
+    (package_root / "ch_ppocr_v2_cls").mkdir()
+    (package_root / "__init__.py").write_text("", encoding="utf-8")
+    (package_root / "config.yaml").write_text("root: true\n", encoding="utf-8")
+    (package_root / "ch_ppocr_v3_det" / "config.yaml").write_text("det: true\n", encoding="utf-8")
+
+    fake_module = types.ModuleType("rapidocr_onnxruntime")
+    fake_module.__file__ = str(package_root / "__init__.py")
+    monkeypatch.setitem(sys.modules, "rapidocr_onnxruntime", fake_module)
+
+    assert rapidocr_config_data_files(":") == [
+        (str(package_root / "config.yaml"), "rapidocr_onnxruntime"),
+        (str(package_root / "ch_ppocr_v3_det" / "config.yaml"), "rapidocr_onnxruntime/ch_ppocr_v3_det"),
+    ]

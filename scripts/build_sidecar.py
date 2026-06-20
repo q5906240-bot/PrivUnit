@@ -109,12 +109,13 @@ def rapidocr_config_data_files(data_separator: str) -> list[tuple[str, str]]:
         raise RuntimeError("打包 sidecar 前需要安装 rapidocr-onnxruntime") from exc
 
     root = Path(rapidocr_onnxruntime.__file__).resolve().parent
-    return [
-        (str(root / "config.yaml"), "rapidocr_onnxruntime"),
-        (str(root / "ch_ppocr_v3_det/config.yaml"), "rapidocr_onnxruntime/ch_ppocr_v3_det"),
-        (str(root / "ch_ppocr_v2_cls/config.yaml"), "rapidocr_onnxruntime/ch_ppocr_v2_cls"),
-        (str(root / "ch_ppocr_v3_rec/config.yaml"), "rapidocr_onnxruntime/ch_ppocr_v3_rec"),
+    candidates = [
+        (root / "config.yaml", "rapidocr_onnxruntime"),
+        (root / "ch_ppocr_v3_det" / "config.yaml", "rapidocr_onnxruntime/ch_ppocr_v3_det"),
+        (root / "ch_ppocr_v2_cls" / "config.yaml", "rapidocr_onnxruntime/ch_ppocr_v2_cls"),
+        (root / "ch_ppocr_v3_rec" / "config.yaml", "rapidocr_onnxruntime/ch_ppocr_v3_rec"),
     ]
+    return [(str(source), target) for source, target in candidates if source.is_file()]
 
 
 def tauri_sidecar_name(name: str, system_platform: str, machine_name: str) -> str:
