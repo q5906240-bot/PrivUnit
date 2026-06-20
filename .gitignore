@@ -1,0 +1,12 @@
+node_modules/
+dist/
+build/
+.venv/
+logs/
+*.log
+__pycache__/
+.pytest_cache/
+.DS_Store
+src-tauri/target/
+src-tauri/binaries/redactor-sidecar-*
+*.spec

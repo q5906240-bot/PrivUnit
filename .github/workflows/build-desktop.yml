@@ -1,0 +1,96 @@
+name: build-desktop
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macos-arm64
+            os: macos-15
+          - name: windows-x64
+            os: windows-latest
+          - name: linux-x64
+            os: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Linux desktop dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Install sidecar dependencies
+        run: python -m pip install -e ".[dev,ocr]" pyinstaller
+
+      - name: Verify tests
+        run: |
+          python -m pytest -q
+          npm run test:ui
+          npm run build
+
+      - name: Build sidecar
+        run: python scripts/build_sidecar.py
+
+      - name: Verify sidecar uses bundled models
+        shell: bash
+        run: |
+          SIDECAR="$(find src-tauri/binaries -type f -name 'redactor-sidecar*' | head -n 1)"
+          python scripts/verify_sidecar.py --sidecar "$SIDECAR"
+
+      - name: Build desktop app
+        shell: bash
+        run: |
+          export LC_ALL="${LC_ALL:-en_US.UTF-8}"
+          export LANG="${LANG:-en_US.UTF-8}"
+          if [[ "${{ runner.os }}" == "Linux" ]]; then
+            ./scripts/build_desktop_linux.sh
+          else
+            npm run tauri -- build
+          fi
+
+      - name: Verify Linux bundles
+        if: runner.os == 'Linux'
+        run: |
+          test -n "$(find src-tauri/target/release/bundle -type f -name '*.deb' -print -quit)"
+          test -n "$(find src-tauri/target/release/bundle -type f -name '*.AppImage' -print -quit)"
+
+      - name: Upload bundles
+        uses: actions/upload-artifact@v4
+        with:
+          name: privunit-${{ matrix.name }}
+          path: |
+            src-tauri/target/release/bundle/**/*.dmg
+            src-tauri/target/release/bundle/**/*.msi
+            src-tauri/target/release/bundle/**/*.exe
+            src-tauri/target/release/bundle/**/*.deb
+            src-tauri/target/release/bundle/**/*.AppImage
+            src-tauri/target/release/bundle/macos/*.app
