@@ -73,6 +73,8 @@ jobs:
           export LANG="${LANG:-en_US.UTF-8}"
           if [[ "${{ runner.os }}" == "Linux" ]]; then
             ./scripts/build_desktop_linux.sh
+          elif [[ "${{ runner.os }}" == "Windows" ]]; then
+            npm run tauri -- build --bundles nsis
           else
             npm run tauri -- build
           fi
